@@ -1,18 +1,19 @@
 import json
 import pickle
 import logging
+import subprocess
 from collections import defaultdict
 
 import luigi
 from luigi.util import inherits
-from luigi.contrib.external_program import ExternalProgramTask
 
 from recon.targets import TargetList
+from recon.amass import  ParseAmassOutput
 from recon.config import top_tcp_ports, top_udp_ports, masscan_config
 
 
-@inherits(TargetList)
-class Masscan(ExternalProgramTask):
+@inherits(TargetList, ParseAmassOutput)
+class Masscan(luigi.Task):
     """ Run masscan against a target specified via the TargetList Task.
 
     Masscan commands are structured like the example below.  When specified, --top_ports is processed and
@@ -41,16 +42,6 @@ class Masscan(ExternalProgramTask):
         super(Masscan, self).__init__(*args, **kwargs)
         self.masscan_output = f"masscan.{self.target_file}.json"
 
-    def requires(self):
-        """ Masscan depends on TargetList to run.
-
-        TargetList expects target_file as a parameter.
-
-        Returns:
-            dict(str: TargetList)
-        """
-        return {"target_list": TargetList(target_file=self.target_file)}
-
     def output(self):
         """ Returns the target output for this task.
 
@@ -61,7 +52,7 @@ class Masscan(ExternalProgramTask):
         """
         return luigi.LocalTarget(self.masscan_output)
 
-    def program_args(self):
+    def run(self):
         """ Defines the options/arguments sent to masscan after processing.
 
         Returns:
@@ -90,6 +81,11 @@ class Masscan(ExternalProgramTask):
             self.ports = f"{top_tcp_ports_str},U:{top_udp_ports_str}"
             self.top_ports = 0
 
+        target_list = yield TargetList(target_file=self.target_file)
+
+        if target_list.path.endswith("domains"):
+            yield ParseAmassOutput(target_file=self.target_file, exempt_list=self.exempt_list)
+
         command = [
             "masscan",
             "-v",
@@ -104,10 +100,10 @@ class Masscan(ExternalProgramTask):
             "--ports",
             self.ports,
             "-iL",
-            self.input().get("target_list").path,
+            target_list.path.replace("domains", "ips"),
         ]
 
-        return command
+        subprocess.run(command)
 
 
 @inherits(Masscan)
