@@ -5,3 +5,23 @@ masscan_config = {
     'iface': 'tun0',
     'rate': '1000',
 }
+
+defaults = {
+    'threads': '10',
+    'aquatone-scan-timeout': '900'
+}
+
+web_ports = {'80', '443', '8080', '8000' '8443'}
+
+tool_paths = {
+    'aquatone': '/usr/local/sbin/aquatone',
+    'tko-subs': '/root/go/bin/tko-subs',
+    'tko-subs-dir': '/root/go/src/github.com/anshumanbh/tko-subs',
+    'subjack': '/root/go/bin/subjack',
+    'subjack-fingerprints': '/root/go/src/github.com/haccer/subjack/fingerprints.json',
+    'CORScanner': '/root/Tools/CORScanner/cors_scan.py',
+    'gobuster': '/usr/bin/gobuster',
+    'feroxbuster': '/root/Tools/feroxbuster',
+
+}
+
